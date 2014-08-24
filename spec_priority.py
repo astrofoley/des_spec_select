@@ -293,10 +293,10 @@ def parse_file(file):
    current_r = np.mean(r_model_mag[current_phase_r_index])
    peak_r = np.mean(r_model_mag[peak_r_index])
    
-   return cid[0], peak_r, current_r, ia_prob, photoz, photoz_err, current_phase, tmax_err
+   return cid[0], peak_r, current_r, ia_prob, photoz, photoz_err, current_phase, tmax_err, current_mjd
 
 
-
+import json
 import numpy as np
 import sys
 from astropy.time import Time
@@ -306,7 +306,7 @@ from numpy import random
 
 fitlc_output = sys.argv[1]
 
-cid, peak_r, current_r, ia_prob, photoz, photoz_err, phase, phase_err = parse_file(fitlc_output)
+cid, peak_r, current_r, ia_prob, photoz, photoz_err, phase, phase_err, current_mjd = parse_file(fitlc_output)
 
 minlim = 20
 maxlim = 25
@@ -318,8 +318,19 @@ host_mass = 50
 
 spec_dist = create_spec_dist('des_spec')
 
-print int(cid), ia_prob, current_r, peak_r, photoz, phase
+# print int(cid), ia_prob, current_r, peak_r, photoz, phase
 
 priorities = find_priority(peak_r, current_r, ia_prob, photoz, photoz_err, phase, phase_err, host_mass, lim_mag_arr, spec_dist)
 
-print priorities
+# print priorities
+
+doc = { "candidate_id"  :   int( cid )  ,
+        "ia_prob"       :   ia_prob     ,
+        "current_r"     :   current_r   ,
+        "peak_r"        :   peak_r      ,
+        "photoz"        :   photoz      ,
+        "phase"         :   phase       ,
+        "mjd"           :   current_mjd ,
+        "priorities"    :   list( priorities )  } 
+
+print json.dumps( doc )
