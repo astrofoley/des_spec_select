@@ -3,6 +3,8 @@ def gauss_function(x, a, x0, sigma):
     return a*np.exp(-(x-x0)**2/(2*sigma**2))
 
 
+
+
 def find_mag_weight(lim_mag, current_r):
 
    weight = np.minimum(np.maximum(1 - (lim_mag - current_r) * 0.3, 1e-3), 1)
@@ -10,6 +12,8 @@ def find_mag_weight(lim_mag, current_r):
       weight = 1e-5
 
    return weight
+
+
 
 
 def find_phase_weight(phase_lim, phase, phase_err):
@@ -119,13 +123,6 @@ def find_priority(peak_r, current_r, ia_prob, photoz, photoz_err, phase, phase_e
    n_bin = 1 / dz
    tot_sn = 160
    
-#   spec_dist = np.zeros((n_bin, 2, 2, 2))
-   
-#   spec_dist = random.uniform(0,10,(2, 2))
-
-   #ideal_dist is what we want
-   
-   #ideal_dist = intarr(n_bin, 2, 2, 2) + tot_sn / 8 / array(n_bin, copy=0).astype(Float32)
    ideal_dist = np.zeros((n_bin, 2, 2, 2)) + tot_sn / 8 / float(n_bin)
 
    
@@ -177,6 +174,7 @@ def find_priority(peak_r, current_r, ia_prob, photoz, photoz_err, phase, phase_e
       priorities[i] = priority
    
    return priorities
+
    
 
 
@@ -223,26 +221,29 @@ def create_spec_dist(file):
 
 
 
+
 def parse_file(file):
 
    current_time = Time.now()
    current_mjd = current_time.mjd
-   
-   #Values that we will later need to get from the file.
-   photoz = 0.5
-   photoz_err = 0.1
-   z = photoz
-   tmax = current_mjd
-   tmax = 56657.0
-   tmax_err = 1
-   ia_prob = 1
-   
+      
    #Read in data
    data = open(file, "r")
    lines = data.readlines()
    data.close
 
-   cid = []
+   name = lines[0].split()[2]
+   cid = int( lines[1].split()[2] )
+   ia_prob = float( lines[7].split()[2] )
+
+   #Get spectroscopic redshift if available; if not, get the photo z
+   z = float( lines[2].split()[2] )
+   if (z >= 0):
+       z_err = float( lines[2].split()[4] )
+   else:
+       z = float( lines[3].split()[2] )
+       z_err = float( lines[3].split()[4] )
+
    mjd = []
    flux = []
    flux_err = []
@@ -250,15 +251,14 @@ def parse_file(file):
    band = []
    ifit = []
 
-   for line in lines[6:]:
-      p = line.split()
-      cid.append(float(p[0]))
-      mjd.append(float(p[1]))
-      flux.append(float(p[3]))
-      flux_err.append(float(p[4]))
-      dataflag.append(int(p[5]))
-      band.append(p[6])
-      ifit.append(int(p[8]))
+   for line in lines[12:]:
+       p = line.split()
+       mjd.append(float(p[1]))
+       flux.append(float(p[3]))
+       flux_err.append(float(p[4]))
+       dataflag.append(int(p[5]))
+       band.append(p[6])
+       ifit.append(int(p[8]))
 
    mjd = np.array(mjd)
    flux = np.array(flux)
@@ -267,15 +267,29 @@ def parse_file(file):
    band = np.array(band)
    ifit = np.array(ifit)
    
+
+   #Values that we will later need to get from the file.
+   file_phase = []
+
+   for line in lines[12:]:
+       p = line.split()
+       file_phase.append(float(p[2]))
+       
+   file_mjd_max = np.mean(mjd[np.where(((abs(np.array(file_phase)) <= 2)) & (dataflag == 0) & (ifit == 1))])
+   tmax = file_mjd_max
+   tmax_err = 1
+   current_mjd = tmax + 5
+   ##############
+
    #Determine the current phase
    current_phase = (current_mjd - tmax) / (1. + z)
-   current_phase = 3
- 
+
    #Determine the phase for each point
    phase = (mjd - tmax) / (1. + z)
    
    #Convert from flux to magnitudes
    mag = flux[:]
+   #Need to fix negative flux; then convert
    for element in range(len(flux)):
       if flux[element] < 1e-5:
          flux[element] = 1e-5
@@ -292,21 +306,23 @@ def parse_file(file):
 
    current_r = np.mean(r_model_mag[current_phase_r_index])
    peak_r = np.mean(r_model_mag[peak_r_index])
-   
-   return cid[0], peak_r, current_r, ia_prob, photoz, photoz_err, current_phase, tmax_err, current_mjd
+
+   return cid, peak_r, current_r, ia_prob, z, z_err, current_phase, tmax_err, current_mjd
 
 
+
+
+import sys
+import math
 import json
 import numpy as np
-import sys
+from numpy import random
 from astropy.time import Time
 import re
-import math
-from numpy import random
 
 fitlc_output = sys.argv[1]
 
-cid, peak_r, current_r, ia_prob, photoz, photoz_err, phase, phase_err, current_mjd = parse_file(fitlc_output)
+cid, peak_r, current_r, ia_prob, z, z_err, phase, phase_err, current_mjd = parse_file(fitlc_output)
 
 minlim = 20
 maxlim = 25
@@ -318,17 +334,14 @@ host_mass = 50
 
 spec_dist = create_spec_dist('des_spec')
 
-# print int(cid), ia_prob, current_r, peak_r, photoz, phase
-
-priorities = find_priority(peak_r, current_r, ia_prob, photoz, photoz_err, phase, phase_err, host_mass, lim_mag_arr, spec_dist)
-
-# print priorities
+priorities = find_priority(peak_r, current_r, ia_prob, z, z_err, phase, phase_err, host_mass, lim_mag_arr, spec_dist)
 
 doc = { "candidate_id"  :   int( cid )  ,
         "ia_prob"       :   ia_prob     ,
         "current_r"     :   current_r   ,
         "peak_r"        :   peak_r      ,
-        "photoz"        :   photoz      ,
+        "redshift"      :   z           ,
+        "redshift_err"  :   z_err       ,
         "phase"         :   phase       ,
         "mjd"           :   current_mjd ,
         "priorities"    :   list( priorities )  } 
