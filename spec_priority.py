@@ -156,13 +156,13 @@ def find_priority(peak_r, current_r, ia_prob, photoz, photoz_err, phase, phase_e
       
       #Do the magnitude complete sample
       mag_complete = 20.5
-      if (peak_r < mag_complete):   
+      if ((peak_r < mag_complete) & (current_r <= lim_mag_arr[i])) :   
          priority = priority + 10
       
       
       #Do the volume complete sample
       z_complete = 0.20
-      if ((photoz <= z_complete) or ((photoz - photoz_err <= z_complete) & (photoz_err < 0.2))):   
+      if ((photoz <= z_complete) or ((photoz - photoz_err <= z_complete) & (photoz_err < 0.2)) & (current_r <= lim_mag_arr[i])):   
          priority = priority + 10
       
       
