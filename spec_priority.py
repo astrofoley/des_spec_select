@@ -234,7 +234,11 @@ def parse_file(file):
 
    name = lines[0].split()[2]
    cid = int( lines[1].split()[2] )
-   ia_prob = float( lines[7].split()[2] )
+   ia_prob = float( lines[8].split()[2] )
+   tmax = float( lines[4].split()[2] )
+   tmax_err = float( lines[4].split()[4] )
+   if (abs(tmax_err) > 10):
+       tmax_err = 5
 
    #Get spectroscopic redshift if available; if not, get the photo z
    z = float( lines[2].split()[2] )
@@ -251,7 +255,7 @@ def parse_file(file):
    band = []
    ifit = []
 
-   for line in lines[12:]:
+   for line in lines[13:]:
        p = line.split()
        mjd.append(float(p[1]))
        flux.append(float(p[3]))
@@ -268,16 +272,7 @@ def parse_file(file):
    ifit = np.array(ifit)
    
 
-   #Values that we will later need to get from the file.
-   file_phase = []
-
-   for line in lines[12:]:
-       p = line.split()
-       file_phase.append(float(p[2]))
-       
-   file_mjd_max = np.mean(mjd[np.where(((abs(np.array(file_phase)) <= 2)) & (dataflag == 0) & (ifit == 1))])
-   tmax = file_mjd_max
-   tmax_err = 1
+   #Hack to run on old data.  Remove if running on current date.
    current_mjd = tmax + 5
    ##############
 
