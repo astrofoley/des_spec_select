@@ -93,7 +93,7 @@ def find_host_flag(host_split, host_mass):
 
 
 
-def find_priority(peak_r, current_r, ia_prob, photoz, photoz_err, phase, phase_err, host_mass, lim_mag_arr, spec_dist):
+def find_priority(peak_r, current_r, ia_prob, photoz, photoz_err, phase, phase_err, phase_first, host_mass, lim_mag_arr, spec_dist):
 
 #peak_r is the peak magnitude in the r band, either measured or
 #expected.
@@ -148,11 +148,16 @@ def find_priority(peak_r, current_r, ia_prob, photoz, photoz_err, phase, phase_e
    
    dist_weight = diff_dist.sum()
 
+   if (phase_first <= 0):
+       first_weight = 1
+   else:
+       first_weight = 1e-5
+
    priorities = np.zeros([len(lim_mag_arr)])
    for i in np.arange(0, len(lim_mag_arr)):
       mag_weight = find_mag_weight(lim_mag_arr[i], current_r)
 
-      priority = mag_weight * phase_weight * dist_weight * ia_prob
+      priority = mag_weight * phase_weight * first_weight * dist_weight * ia_prob
       
       #Do the magnitude complete sample
       mag_complete = 20.5
@@ -222,6 +227,22 @@ def create_spec_dist(file):
 
 
 
+def find_first(mjd, flux, flux_err, dataflag):
+
+    good1 = np.where((dataflag == 1) & (flux_err > 0))
+    mjd1 = mjd[good1]
+    flux1 = flux[good1]
+    flux_err1 = flux_err[good1]
+
+    good2 = np.where(flux1/flux_err1 >= 3)
+
+    tfirst = min(mjd1[good2])
+
+    return tfirst
+
+
+
+
 def parse_file(file):
 
    current_time = Time.now()
@@ -238,7 +259,7 @@ def parse_file(file):
    tmax = float( lines[4].split()[2] )
    tmax_err = float( lines[4].split()[4] )
    if (abs(tmax_err) > 10):
-       tmax_err = 5
+       tmax_err = 3
 
    #Get spectroscopic redshift if available; if not, get the photo z
    z = float( lines[2].split()[2] )
@@ -273,7 +294,7 @@ def parse_file(file):
    
 
    #Hack to run on old data.  Remove if running on current date.
-   current_mjd = tmax + 5
+   #current_mjd = tmax + 5
    ##############
 
    #Determine the current phase
@@ -281,7 +302,11 @@ def parse_file(file):
 
    #Determine the phase for each point
    phase = (mjd - tmax) / (1. + z)
-   
+
+   #Determine MJD and phase of first S/N > 3 data point
+   t_first = find_first(mjd, flux, flux_err, dataflag)
+   phase_first = (t_first - tmax) / (1. + z)
+
    #Convert from flux to magnitudes
    mag = flux[:]
    #Need to fix negative flux; then convert
@@ -295,14 +320,14 @@ def parse_file(file):
    #Determine the peak and current r mag
    r_model_index = np.where((dataflag == 0) & (band == 'r') & (ifit == 1))
    r_model_mag = mag[r_model_index]
-   
+
    current_phase_r_index = np.where(abs(phase[r_model_index] - current_phase) == min(abs(phase[r_model_index] - current_phase)))
    peak_r_index = np.where(abs(phase[r_model_index]) == min(abs(phase[r_model_index])))
 
    current_r = np.mean(r_model_mag[current_phase_r_index])
    peak_r = np.mean(r_model_mag[peak_r_index])
 
-   return cid, peak_r, current_r, ia_prob, z, z_err, current_phase, tmax_err, current_mjd
+   return name, cid, peak_r, current_r, ia_prob, z, z_err, current_phase, tmax_err, current_mjd, phase_first
 
 
 
@@ -317,7 +342,7 @@ import re
 
 fitlc_output = sys.argv[1]
 
-cid, peak_r, current_r, ia_prob, z, z_err, phase, phase_err, current_mjd = parse_file(fitlc_output)
+name, cid, peak_r, current_r, ia_prob, z, z_err, phase, phase_err, current_mjd, phase_first = parse_file(fitlc_output)
 
 minlim = 20
 maxlim = 25
@@ -329,16 +354,19 @@ host_mass = 50
 
 spec_dist = create_spec_dist('des_spec')
 
-priorities = find_priority(peak_r, current_r, ia_prob, z, z_err, phase, phase_err, host_mass, lim_mag_arr, spec_dist)
+priorities = find_priority(peak_r, current_r, ia_prob, z, z_err, phase, phase_err, phase_first, host_mass, lim_mag_arr, spec_dist)
 
-doc = { "candidate_id"  :   int( cid )  ,
-        "ia_prob"       :   ia_prob     ,
-        "current_r"     :   current_r   ,
-        "peak_r"        :   peak_r      ,
-        "redshift"      :   z           ,
-        "redshift_err"  :   z_err       ,
-        "phase"         :   phase       ,
-        "mjd"           :   current_mjd ,
-        "priorities"    :   list( priorities )  } 
+doc = {"version"        :   "20140903",
+       "mag_limits"     :   list( lim_mag_arr ),
+       "candidate_name" :   name        ,
+       "candidate_id"   :   int( cid )  ,
+       "ia_prob"        :   ia_prob     ,
+       "current_r"      :   current_r   ,
+       "peak_r"         :   peak_r      ,
+       "redshift"       :   z           ,
+       "redshift_err"   :   z_err       ,
+       "phase"          :   phase       ,
+       "mjd"            :   current_mjd ,
+       "priorities"     :   list( priorities )  } 
 
 print json.dumps( doc )
