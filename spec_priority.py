@@ -18,30 +18,34 @@ def find_mag_weight(lim_mag, current_r):
 
 def find_phase_weight(phase_lim, phase, phase_err):
 
-   #To account for the difference between when the program is run and when the spectrum is taken:
-   phase = phase + 0.5
-   phase_err = (phase_err**2 + 0.5**2)**0.5
+   if (phase - phase_err < phase_lim):
+       #To account for the difference between when the program is run and when the spectrum is taken:
+       phase = phase + 0.5
+       phase_err = (phase_err**2 + 0.5**2)**0.5
    
-   phase_arr = np.arange(-20, 20, 0.1)
+       phase_arr = np.arange(-20, 20, 0.1)
    
-   weight_func = np.zeros(len(phase_arr))
+       weight_func = np.zeros(len(phase_arr))
    
-   index = np.where(phase_arr < -2)
-   weight_func[index] = np.maximum(1 - 0.007 * (phase_arr[index] - 2)**2, 1e-3)
+       index = np.where(phase_arr < -2)
+       weight_func[index] = np.maximum(1 - 0.007 * (phase_arr[index] - 2)**2, 1e-3)
    
-   index = np.where(phase_arr > 0)
-   weight_func[index] = np.maximum(1 - 0.01 * phase_arr[index]**2, 1e-3)
+       index = np.where(phase_arr > 0)
+       weight_func[index] = np.maximum(1 - 0.01 * phase_arr[index]**2, 1e-3)
    
-   index = np.where((phase_arr >= -2) & (phase_arr <= 0))
-   weight_func[index] = 1
+       index = np.where((phase_arr >= -2) & (phase_arr <= 0))
+       weight_func[index] = 1
    
-   index = np.where(phase_arr >= phase_lim)
-   weight_func[index] = 1e-3
+       index = np.where(phase_arr >= phase_lim)
+       weight_func[index] = 1e-3
 
-   phase_dist = gauss_function(phase_arr, 1, phase, phase_err)
-   phase_dist = phase_dist / phase_dist.sum()
+       phase_dist = gauss_function(phase_arr, 1, phase, phase_err)
+       phase_dist = phase_dist / phase_dist.sum()
 
-   weight = (phase_dist * weight_func).sum()
+       weight = (phase_dist * weight_func).sum()
+
+   else:
+       weight = 1e-3
    
    return weight
    
@@ -176,6 +180,9 @@ def find_priority(peak_r, current_r, ia_prob, photoz, photoz_err, phase, phase_e
       if (current_r < mag_bright):   
          priority = priority + 10
       
+      if ((current_r > lim_mag_arr[i]) & (priority > 1e-15)):
+          priority = 1e-15
+          
       priorities[i] = priority
    
    return priorities
@@ -255,20 +262,23 @@ def parse_file(file):
 
    name = lines[0].split()[2]
    cid = int( lines[1].split()[2] )
-   ia_prob = float( lines[8].split()[2] )
-   tmax = float( lines[4].split()[2] )
-   tmax_err = float( lines[4].split()[4] )
+   ia_prob = float( lines[10].split()[2] )
+   tmax = float( lines[6].split()[2] )
+   tmax_err = float( lines[6].split()[4] )
    if (abs(tmax_err) > 10):
        tmax_err = 3
 
    #Get spectroscopic redshift if available; if not, get the photo z
-   z = float( lines[2].split()[2] )
+   z = float( lines[4].split()[2] )
    if (z >= 0):
-       z_err = float( lines[2].split()[4] )
+       z_err = float( lines[4].split()[4] )
    else:
-       z = float( lines[3].split()[2] )
-       z_err = float( lines[3].split()[4] )
+       z = float( lines[5].split()[2] )
+       z_err = float( lines[5].split()[4] )
 
+   if (z_err <= 0):
+       z_err = 0.2
+       
    mjd = []
    flux = []
    flux_err = []
@@ -276,7 +286,7 @@ def parse_file(file):
    band = []
    ifit = []
 
-   for line in lines[13:]:
+   for line in lines[15:]:
        p = line.split()
        mjd.append(float(p[1]))
        flux.append(float(p[3]))
@@ -302,7 +312,7 @@ def parse_file(file):
 
    #Determine the phase for each point
    phase = (mjd - tmax) / (1. + z)
-
+   
    #Determine MJD and phase of first S/N > 3 data point
    t_first = find_first(mjd, flux, flux_err, dataflag)
    phase_first = (t_first - tmax) / (1. + z)
@@ -356,7 +366,7 @@ spec_dist = create_spec_dist('des_spec')
 
 priorities = find_priority(peak_r, current_r, ia_prob, z, z_err, phase, phase_err, phase_first, host_mass, lim_mag_arr, spec_dist)
 
-doc = {"version"        :   "20140903",
+doc = {"version"        :   "20140920",
        "mag_limits"     :   list( lim_mag_arr ),
        "candidate_name" :   name        ,
        "candidate_id"   :   int( cid )  ,
@@ -370,3 +380,4 @@ doc = {"version"        :   "20140903",
        "priorities"     :   list( priorities )  } 
 
 print json.dumps( doc )
+
