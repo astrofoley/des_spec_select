@@ -328,7 +328,11 @@ def parse_file(file):
    mag = np.array(mag)
    
    #Determine the peak and current r mag
-   r_model_index = np.where((dataflag == 0) & (band == 'r') & (ifit == 1))
+   if (ia_prob >= 0.5):
+       r_model_index = np.where((dataflag == 0) & (band == 'r') & (ifit == 1))
+   else:
+       r_model_index = np.where((dataflag == 0) & (band == 'r') & (ifit == 3))
+
    r_model_mag = mag[r_model_index]
 
    current_phase_r_index = np.where(abs(phase[r_model_index] - current_phase) == min(abs(phase[r_model_index] - current_phase)))
@@ -336,6 +340,7 @@ def parse_file(file):
 
    current_r = np.mean(r_model_mag[current_phase_r_index])
    peak_r = np.mean(r_model_mag[peak_r_index])
+
 
    return name, cid, peak_r, current_r, ia_prob, z, z_err, current_phase, tmax_err, current_mjd, phase_first
 
@@ -366,7 +371,7 @@ spec_dist = create_spec_dist('des_spec')
 
 priorities = find_priority(peak_r, current_r, ia_prob, z, z_err, phase, phase_err, phase_first, host_mass, lim_mag_arr, spec_dist)
 
-doc = {"version"        :   "20140920",
+doc = {"version"        :   "20140929",
        "mag_limits"     :   list( lim_mag_arr ),
        "candidate_name" :   name        ,
        "candidate_id"   :   int( cid )  ,
