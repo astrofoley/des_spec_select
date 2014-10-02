@@ -97,7 +97,7 @@ def find_host_flag(host_split, host_mass):
 
 
 
-def find_priority(peak_r, current_r, ia_prob, photoz, photoz_err, phase, phase_err, phase_first, host_mass, lim_mag_arr, spec_dist):
+def find_priority(name, peak_r, current_r, ia_prob, photoz, photoz_err, phase, phase_err, phase_first, host_mass, lim_mag_arr, spec_dist):
 
 #peak_r is the peak magnitude in the r band, either measured or
 #expected.
@@ -166,13 +166,18 @@ def find_priority(peak_r, current_r, ia_prob, photoz, photoz_err, phase, phase_e
       #Do the magnitude complete sample
       mag_complete = 20.5
       if ((peak_r < mag_complete) & (current_r <= lim_mag_arr[i])) :   
-         priority = priority + 10
-      
+          if (name[6] == '3'):
+              priority = priority + 10
+          else:
+              priority = priority + 1
       
       #Do the volume complete sample
       z_complete = 0.20
       if ((photoz <= z_complete) or ((photoz - photoz_err <= z_complete) & (photoz_err < 0.2)) & (current_r <= lim_mag_arr[i])):   
-         priority = priority + 10
+          if (name[6] == '3'):
+              priority = priority + 10
+          else:
+              priority = priority + 1
       
       
       #Add another bump for really bright things
@@ -369,9 +374,9 @@ host_mass = 50
 
 spec_dist = create_spec_dist('des_spec')
 
-priorities = find_priority(peak_r, current_r, ia_prob, z, z_err, phase, phase_err, phase_first, host_mass, lim_mag_arr, spec_dist)
+priorities = find_priority(name, peak_r, current_r, ia_prob, z, z_err, phase, phase_err, phase_first, host_mass, lim_mag_arr, spec_dist)
 
-doc = {"version"        :   "20140929",
+doc = {"version"        :   "20141001",
        "mag_limits"     :   list( lim_mag_arr ),
        "candidate_name" :   name        ,
        "candidate_id"   :   int( cid )  ,
