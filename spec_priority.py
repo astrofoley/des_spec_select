@@ -54,27 +54,33 @@ def find_phase_weight(phase_lim, phase, phase_err):
 
 def find_z_weight(photoz, photoz_err, dz):
 
-   n_params = 3
+       
+    n_params = 3
    
-   n_bin = 1 / dz
+    n_bin = 1 / dz
    
-   weight = np.zeros((n_bin, 2, 2, 2))
+    if (photoz >= 0):
 
-   zmin = np.arange(0, 1, dz)
-   zmax = np.arange(0+dz, 1+dz, dz)
-   
-   n = 501
+        weight = np.zeros((n_bin, 2, 2, 2))
 
-   z_arr = np.arange(0, 1.25, 0.0025)
+        zmin = np.arange(0, 1, dz)
+        zmax = np.arange(0+dz, 1+dz, dz)
    
-   z_dist = gauss_function(z_arr, 1, photoz, photoz_err)
-   z_dist = z_dist / z_dist.sum()
+        n = 501
+
+        z_arr = np.arange(0, 1.25, 0.0025)
+       
+        z_dist = gauss_function(z_arr, 1, photoz, photoz_err)
+        z_dist = z_dist / z_dist.sum()
    
-   for i in np.arange(0, n_bin):
-      index = np.where((z_arr >= zmin[i]) & (z_arr < zmax[i]))
-      weight[i,:,:,:] = (z_dist[index]).sum()
-   
-   return weight
+        for i in np.arange(0, n_bin):
+            index = np.where((z_arr >= zmin[i]) & (z_arr < zmax[i]))
+            weight[i,:,:,:] = (z_dist[index]).sum()
+
+    else:
+       weight = np.ones((n_bin, 2, 2, 2))
+
+    return weight
    
 
 
@@ -376,7 +382,7 @@ spec_dist = create_spec_dist('des_spec')
 
 priorities = find_priority(name, peak_r, current_r, ia_prob, z, z_err, phase, phase_err, phase_first, host_mass, lim_mag_arr, spec_dist)
 
-doc = {"version"        :   "20141001",
+doc = {"version"        :   "20141029",
        "mag_limits"     :   list( lim_mag_arr ),
        "candidate_name" :   name        ,
        "candidate_id"   :   int( cid )  ,
