@@ -1,10 +1,12 @@
-PRO analysis, card, mag
+PRO analysis, card, mag, field=field
 
 ;readcol, 'out_temp', format='X,D,X,X,X,I,X,D,X,D,X,A,X,D,X,D,X,D,D,D,D,D,D,D,D,D,D,D,X,D', peak_r, cid, z, phase, name, current_r, z_err, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, ia_prob
 ;readcol, 'out_temp', format='X,D,X,X,X,X,X,X,X,X,X,X,X,X,X,D,X,D,X,X,X,A,X,D,D,D,D,D,D,D,D,D,D,D,X,D,X,X,X,I,X,D,X,D', z, current_r, phase, name, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, peak_r, cid, ia_prob, z_err
 readcol, 'out_temp3', format='X,D,X,X,X,X,X,X,X,X,X,X,X,X,X,D,X,D,X,X,X,A,X,D,D,D,D,D,D,D,D,D,D,D,X,D,X,X,X,L,X,D,X,D', z, current_r, phase, name, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, peak_r, cid, ia_prob, z_err
 
-
+readcol, format='A', 'qso', qso
+readcol, format='A', 'crap', crap
+readcol, format='A', 'des_spec', conf
 
 
 
@@ -81,9 +83,30 @@ endcase
 
 ;for i = 0, n_elements(ii)-1 do begin
 for i = 0, n_elements(ii)-1 do begin
-  if ((pp[ii[i]] gt 1d-15) and (strmid(name[ii[i]],5,1) eq 'C1')) then $
-;  if (pp[ii[i]] gt 1d-15) then $
-  print, name[ii[i]], pp[ii[i]], z[ii[i]], z_err[ii[i]], ia_prob[ii[i]], current_r[ii[i]], '  http://dessne.cosmology.illinois.edu/SNWG/web/display/examineCand_Y2.php?Name='+name[ii[i]]
+  skip = 0
+  if (keyword_set(field)) then begin
+    if ((pp[ii[i]] gt 1d-15) and (strmid(name[ii[i]],5,2) eq field)) then begin
+      for j = 0, n_elements(qso) - 1 do $
+        if (name[ii[i]] eq qso[j]) then skip = 1
+      for j = 0, n_elements(crap) - 1 do $
+        if (name[ii[i]] eq crap[j]) then skip = 1
+      for j = 0, n_elements(conf) - 1 do $
+        if (name[ii[i]] eq conf[j]) then skip = 1
+      if (skip eq 0) then $
+        print, name[ii[i]], pp[ii[i]], z[ii[i]], z_err[ii[i]], ia_prob[ii[i]], current_r[ii[i]], '  http://dessne.cosmology.illinois.edu/SNWG/web/display/examineCand_Y2.php?Name='+name[ii[i]]
+    endif
+  endif else begin
+    if (pp[ii[i]] gt 1d-15) then begin
+      for j = 0, n_elements(qso) - 1 do $
+        if (name[ii[i]] eq qso[j]) then skip = 1
+      for j = 0, n_elements(crap) - 1 do $
+        if (name[ii[i]] eq crap[j]) then skip = 1
+      for j = 0, n_elements(conf) - 1 do $
+        if (name[ii[i]] eq conf[j]) then skip = 1
+      if (skip eq 0) then $
+      print, name[ii[i]], pp[ii[i]], z[ii[i]], z_err[ii[i]], ia_prob[ii[i]], current_r[ii[i]], '  http://dessne.cosmology.illinois.edu/SNWG/web/display/examineCand_Y2.php?Name='+name[ii[i]]
+    endif
+  endelse
 endfor
 
 ;for i = 0, 150 do print, cid[ii[i]]

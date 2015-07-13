@@ -1,0 +1,9 @@
+#!/bin/bash
+
+FILES="LCFITS/DES*DES*[C,S,X]*.dat"
+
+for f in $FILES
+do
+    echo "Processing $f file..."
+    python2.7 spec_priority.py $f >> out_temp2
+done
