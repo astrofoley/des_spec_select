@@ -27,13 +27,13 @@ def find_phase_weight(phase_lim, phase, phase_err):
    
        weight_func = np.zeros(len(phase_arr))
    
-       index = np.where(phase_arr < -2)
+       index = np.where(phase_arr < -5)
        weight_func[index] = np.maximum(1 - 0.007 * (phase_arr[index] - 2)**2, 1e-3)
    
        index = np.where(phase_arr > 0)
        weight_func[index] = np.maximum(1 - 0.01 * phase_arr[index]**2, 1e-3)
    
-       index = np.where((phase_arr >= -2) & (phase_arr <= 0))
+       index = np.where((phase_arr >= -5) & (phase_arr <= 0))
        weight_func[index] = 1
    
        index = np.where(phase_arr >= phase_lim)
@@ -139,7 +139,7 @@ def find_priority(name, peak_r, current_r, ia_prob, photoz, photoz_err, phase, p
    
    #Define different weights.  These will need to be updated for
    #different telescopes, conditions, etc
-   phase_lim = 10
+   phase_lim = 0
    phase_weight = find_phase_weight(phase_lim, phase, phase_err)
    
    dz = 0.01
