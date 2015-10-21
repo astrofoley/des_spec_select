@@ -61,7 +61,7 @@ def find_z_weight(photoz, photoz_err, dz):
    
     if (photoz >= 0):
 
-        weight = np.zeros((n_bin, 2, 2, 2))
+        weight = np.zeros(n_bin)
 
         zmin = np.arange(0, 1, dz)
         zmax = np.arange(0+dz, 1+dz, dz)
@@ -75,10 +75,10 @@ def find_z_weight(photoz, photoz_err, dz):
    
         for i in np.arange(0, n_bin):
             index = np.where((z_arr >= zmin[i]) & (z_arr < zmax[i]))
-            weight[i,:,:,:] = (z_dist[index]).sum()
+            weight[i] = (z_dist[index]).sum()
 
     else:
-       weight = np.ones((n_bin, 2, 2, 2))
+       weight = np.ones(n_bin)
 
     return weight
    
@@ -128,7 +128,7 @@ def find_priority(name, peak_r, current_r, ia_prob, photoz, photoz_err, phase, p
 
 
 #Now the more complicated algorithm to get the probability
-   dz = 0.2
+   dz = 0.01
    
    n_bin = 1 / dz
    tot_sn = 160
@@ -145,13 +145,14 @@ def find_priority(name, peak_r, current_r, ia_prob, photoz, photoz_err, phase, p
    dz = 0.01
    z_weight = find_z_weight(photoz, photoz_err, dz)
 
-   z_arr = np.arange(0, 1.25, dz)
-   ideal_z = 0.5
-   ideal_dz = 0.1
+   z_arr = np.arange(0, 1, dz)
+   ideal_z = 0.49
+   ideal_dz = 0.05
+
    ideal_dist = gauss_function(z_arr, 1, ideal_z, ideal_dz)
    ideal_dist = ideal_dist / ideal_dist.sum()
-   redshift_weight = ideal_dist * z_weight
-   
+   redshift_weight = (ideal_dist * z_weight).sum()
+
    if (phase_first <= 0):
        first_weight = 1
    else:
@@ -162,32 +163,7 @@ def find_priority(name, peak_r, current_r, ia_prob, photoz, photoz_err, phase, p
       mag_weight = find_mag_weight(lim_mag_arr[i], current_r)
 
       priority = mag_weight * phase_weight * first_weight * redshift_weight * ia_prob
-      
-      #Do the magnitude complete sample
-      mag_complete = 20.5
-      if ((peak_r < mag_complete) & (current_r <= lim_mag_arr[i])) :   
-          if (name[6] == '3'):
-              priority = priority + 10
-          else:
-              priority = priority + 1
-      
-      #Do the volume complete sample
-      z_complete = 0.20
-      if ((photoz <= z_complete) or ((photoz - photoz_err <= z_complete) & (photoz_err < 0.2)) & (current_r <= lim_mag_arr[i])):   
-          if (name[6] == '3'):
-              priority = priority + 10
-          else:
-              priority = priority + 1
-      
-      
-      #Add another bump for really bright things
-      mag_bright = 19
-      if (current_r < mag_bright):   
-         priority = priority + 10
-      
-      if ((current_r > lim_mag_arr[i]) & (priority > 1e-15)):
-          priority = 1e-15
-          
+
       priorities[i] = priority
    
    return priorities

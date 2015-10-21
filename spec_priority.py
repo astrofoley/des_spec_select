@@ -168,7 +168,7 @@ def find_priority(name, peak_r, current_r, ia_prob, photoz, photoz_err, phase, p
       mag_weight = find_mag_weight(lim_mag_arr[i], current_r)
 
       priority = mag_weight * phase_weight * first_weight * dist_weight * ia_prob
-      
+
       #Do the magnitude complete sample
       mag_complete = 20.5
       if ((peak_r < mag_complete) & (current_r <= lim_mag_arr[i])) :   

@@ -6,13 +6,14 @@ readcol, 'out_temp3', format='X,D,X,X,X,X,X,X,X,X,X,X,X,X,X,D,X,D,X,X,X,A,X,D,D,
 
 readcol, format='A', 'qso', qso
 readcol, format='A', 'crap', crap
-readcol, format='A', 'des_spec', conf
+;readcol, format='A', 'des_spec', conf
+readcol, format='A', 'conf', conf
 
 
 
-plothist, current_r, bin=0.1
-plothist, peak_r, bin=0.1
-plothist, z, bin=0.1
+;plothist, current_r, bin=0.1
+;plothist, peak_r, bin=0.1
+;plothist, z, bin=0.1
 
 print, median(z)
 
@@ -21,7 +22,7 @@ print, n_elements(where(peak_r le 20.5))
 print, n_elements(where(current_r le 19))
 print, n_elements(where((z le 0.2) or (peak_r le 20.5) or (current_r le 19)))
 
-plothist, ia_prob, bin=0.1
+;plothist, ia_prob, bin=0.1
 print, median(ia_prob)
 print, n_elements(where(ia_prob gt 0.8))
 
@@ -84,29 +85,31 @@ endcase
 ;for i = 0, n_elements(ii)-1 do begin
 for i = 0, n_elements(ii)-1 do begin
   skip = 0
-  if (keyword_set(field)) then begin
-    if ((pp[ii[i]] gt 1d-15) and (strmid(name[ii[i]],5,2) eq field)) then begin
-      for j = 0, n_elements(qso) - 1 do $
-        if (name[ii[i]] eq qso[j]) then skip = 1
-      for j = 0, n_elements(crap) - 1 do $
-        if (name[ii[i]] eq crap[j]) then skip = 1
-      for j = 0, n_elements(conf) - 1 do $
-        if (name[ii[i]] eq conf[j]) then skip = 1
-      if (skip eq 0) then $
-        print, name[ii[i]], pp[ii[i]], z[ii[i]], z_err[ii[i]], ia_prob[ii[i]], current_r[ii[i]], '  http://dessne.cosmology.illinois.edu/SNWG/web/display/examineCand_Y2.php?Name='+name[ii[i]]
-    endif
-  endif else begin
-    if (pp[ii[i]] gt 1d-15) then begin
-      for j = 0, n_elements(qso) - 1 do $
-        if (name[ii[i]] eq qso[j]) then skip = 1
-      for j = 0, n_elements(crap) - 1 do $
-        if (name[ii[i]] eq crap[j]) then skip = 1
-      for j = 0, n_elements(conf) - 1 do $
-        if (name[ii[i]] eq conf[j]) then skip = 1
-      if (skip eq 0) then $
-      print, name[ii[i]], pp[ii[i]], z[ii[i]], z_err[ii[i]], ia_prob[ii[i]], current_r[ii[i]], '  http://dessne.cosmology.illinois.edu/SNWG/web/display/examineCand_Y2.php?Name='+name[ii[i]]
-    endif
-  endelse
+  if (strmid(name[ii[i]],3,2) eq '15') then begin
+    if (keyword_set(field)) then begin
+      if ((pp[ii[i]] gt 1d-15) and (strmid(name[ii[i]],5,2) eq field)) then begin
+        for j = 0, n_elements(qso) - 1 do $
+          if (name[ii[i]] eq qso[j]) then skip = 1
+        for j = 0, n_elements(crap) - 1 do $
+          if (name[ii[i]] eq crap[j]) then skip = 1
+        for j = 0, n_elements(conf) - 1 do $
+          if (name[ii[i]] eq conf[j]) then skip = 1
+        if (skip eq 0) then $
+          print, name[ii[i]], pp[ii[i]], z[ii[i]], z_err[ii[i]], ia_prob[ii[i]], current_r[ii[i]], '  http://dessne.cosmology.illinois.edu/SNWG/web/display/examineCand.php?Name='+name[ii[i]]
+      endif
+    endif else begin
+      if (pp[ii[i]] gt 1d-15) then begin
+        for j = 0, n_elements(qso) - 1 do $
+          if (name[ii[i]] eq qso[j]) then skip = 1
+        for j = 0, n_elements(crap) - 1 do $
+          if (name[ii[i]] eq crap[j]) then skip = 1
+        for j = 0, n_elements(conf) - 1 do $
+          if (name[ii[i]] eq conf[j]) then skip = 1
+        if (skip eq 0) then $
+      print, name[ii[i]], pp[ii[i]], z[ii[i]], z_err[ii[i]], ia_prob[ii[i]], current_r[ii[i]], '  http://dessne.cosmology.illinois.edu/SNWG/web/display/examineCand.php?Name='+name[ii[i]]
+      endif
+    endelse
+  endif
 endfor
 
 ;for i = 0, 150 do print, cid[ii[i]]
